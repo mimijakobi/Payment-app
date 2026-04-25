@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "65203d6d-c1a3-4288-bb06-87db595456e3"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -67,6 +68,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+    "proxyConfig": "proxy.conf.json"
+  },
           "configurations": {
             "production": {
               "buildTarget": "Payment-app:build:production"

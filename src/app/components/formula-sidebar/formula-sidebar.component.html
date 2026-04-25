@@ -1,0 +1,15 @@
+<aside class="formula-sidebar">
+  <div class="formula-list">
+    <div class="formula-item" *ngFor="let f of formulas">
+      <div
+        class="formula-icon"
+        [style.border-color]="f.color + '80'"
+        [style.background]="f.color + '22'"
+        [style.color]="f.color"
+      >
+        {{ f.symbol }}
+      </div>
+      <span class="formula-label">{{ f.label }}</span>
+    </div>
+  </div>
+</aside>

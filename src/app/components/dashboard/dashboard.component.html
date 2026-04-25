@@ -1,0 +1,369 @@
+<main class="main-content grid-bg" dir="rtl">
+
+  <!-- ── HEADER ── תמיד גלוי ── -->
+  <header class="header fade-in-up">
+    <div class="header-glow-1"></div>
+    <div class="header-glow-2"></div>
+    <div class="header-inner">
+      <div>
+        <div class="header-badges">
+          <div class="badge-ministry">משרד החינוך</div>
+          <div class="status-dot-green"></div>
+          <span class="status-text">מערכת פעילה</span>
+        </div>
+        <h1 class="header-title">מנגנון חישוב דינמי — מבדק ביצועים</h1>
+        <p class="header-sub">השוואת שיטות עיבוד נוסחאות דינמיות</p>
+      </div>
+
+      <button class="methodology-btn" (click)="openMethodology()">
+        <span class="methodology-btn-icon">📖</span>
+        שיטת העבודה
+      </button>
+    </div>
+  </header>
+
+  <!-- ── מסך עיבוד ── מוצג בזמן הרצת החישובים ── -->
+  <section *ngIf="isProcessing()" class="processing-view">
+    <div class="processing-card">
+      <div class="processing-top">
+        <div class="spinner"></div>
+        <span class="processing-label">המערכת מעבדת נתונים, אנא המתן...</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="progressPercent()"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-hint">
+            {{ progressPercent() < 99 ? 'מחשב נוסחאות...' : 'ממתין לתוצאות הסופיות...' }}
+          </span>
+          <span class="progress-pct">{{ progressPercent() }}%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── תוכן ראשי ── -->
+  <ng-container *ngIf="!isProcessing()">
+
+    <!-- תוצאות השוואה — מוצג לאחר לחיצה על "כן" בפופאפ -->
+    <app-results
+      *ngIf="compareResult()"
+      [data]="compareResult()!"
+    ></app-results>
+
+    <!-- מסך ראשי: Schema + כפתור -->
+    <ng-container *ngIf="!compareResult()">
+
+      <!-- ── מבנה טבלאות SQL ── -->
+      <section>
+        <div class="section-title">
+          <div class="section-icon" style="background: #06b6d412; border-color: #06b6d422;">🗄️</div>
+          <h2>מבנה טבלאות — SQL Schema</h2>
+        </div>
+
+        <div class="db-cards">
+          <div
+            *ngFor="let table of dbTables"
+            class="db-card"
+            [style.border-color]="table.color + '28'"
+            (mouseenter)="onCardEnter($event, table.color)"
+            (mouseleave)="onCardLeave($event)"
+          >
+            <div class="db-card-header"
+                 [style.background]="table.color + '14'"
+                 [style.border-color]="table.color + '22'">
+              <span class="db-icon">🗃</span>
+              <span class="db-table-name" [style.color]="table.color">{{ table.name }}</span>
+              <button
+                *ngIf="table.name === 't_targil'"
+                class="card-script-btn"
+                (click)="openExerciseScript(); $event.stopPropagation()"
+              >סקריפט הכנסת תרגילים</button>
+            </div>
+            <div class="db-card-body">
+              <div *ngFor="let col of table.columns" class="db-col-row">
+                <span class="col-name">{{ col.name }}</span>
+                <span
+                  class="col-badge"
+                  [style.background]="getColNote(col.note).bg"
+                  [style.color]="getColNote(col.note).color"
+                  [style.border-color]="getColNote(col.note).border"
+                >{{ col.note }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- כפתור אחד בסוף השורה -->
+          <button class="data-script-btn" (click)="openDataScript()">
+            <span class="data-script-icon">⚙️</span>
+            סקריפט מילוי נתונים רנדומליים
+          </button>
+
+        </div>
+      </section>
+
+      <!-- ── כפתור הפעלה ── -->
+      <section class="action-section">
+
+        <div *ngIf="!isComparing()" class="run-buttons">
+
+          <!-- הרצה מלאה — מיליון רשומות, שולח NULL -->
+          <button class="run-btn" (click)="onRunBenchmark()">
+            🚀 הרץ חישובים והשווה ביצועים
+            <span class="run-btn-sub">1,000,000 רשומות</span>
+          </button>
+
+          <!-- דמו — 1,000 רשומות לבדיקה מהירה -->
+          <button class="run-btn run-btn--demo" (click)="onRunBenchmark(1000)">
+            🎯 הרצת דמו
+            <span class="run-btn-sub">1,000 רשומות · בדיקה מהירה</span>
+          </button>
+
+        </div>
+
+        <div *ngIf="isComparing()" class="comparing-card">
+          <div class="spinner spinner--lg"></div>
+          <span class="comparing-text">מבצע השוואת זמני ריצה...</span>
+        </div>
+
+        <div
+          *ngIf="resultMessage()"
+          class="result-banner"
+          [class.result-success]="resultSuccess() === true"
+          [class.result-error]="resultSuccess() === false"
+        >
+          {{ resultMessage() }}
+        </div>
+
+      </section>
+
+    </ng-container>
+
+  </ng-container>
+
+  <!-- ── פאנל שיטת העבודה ── -->
+  <div *ngIf="showMethodology()" class="methodology-overlay" (click)="closeMethodology()">
+    <div class="methodology-panel" (click)="$event.stopPropagation()" dir="rtl">
+
+      <div class="methodology-panel-header">
+        <div class="methodology-panel-title">
+          <span>📖</span>
+          שיטת העבודה
+        </div>
+        <button class="methodology-close-btn" (click)="closeMethodology()">✕</button>
+      </div>
+
+      <div class="methodology-panel-body">
+
+        <!-- ── תקציר ── -->
+        <div class="meth-section">
+          <div class="meth-section-title">
+            <span class="meth-section-icon" style="background:#6366f112; border-color:#6366f128; color:#6366f1;">📄</span>
+            תקציר שיטת העבודה
+          </div>
+          <p class="meth-text">
+            המערכת פותחה כפתרון גמיש ורחב־היקף לחישוב נוסחאות דינמיות על כמויות נתונים גדולות.
+          </p>
+          <p class="meth-text">
+            היא מאפשרת להגדיר נוסחאות בזמן ריצה, להריץ אותן על מאגר נתונים רחב, ולהשוות בין מספר מנועי חישוב שונים — וכל זאת ללא צורך בשינוי קוד בכל פעם שנוסחה משתנה.
+          </p>
+        </div>
+
+        <div class="meth-divider"></div>
+
+        <!-- ── ארכיטקטורה ── -->
+        <div class="meth-section">
+          <div class="meth-section-title">
+            <span class="meth-section-icon" style="background:#3b82f612; border-color:#3b82f628; color:#3b82f6;">⚙️</span>
+            ארכיטקטורה כללית
+          </div>
+          <p class="meth-text">הליבה של המערכת היא מנגנון הרצה מרכזי שמנהל את כל תהליך החישוב:</p>
+          <ul class="meth-features">
+            <li>📋 טעינת הנוסחאות ממסד הנתונים</li>
+            <li>⚡ הפעלת כל מנועי החישוב במקביל</li>
+            <li>📦 עיבוד הנתונים במנות (Paging)</li>
+            <li>💾 שמירת תוצאות החישוב</li>
+            <li>🕐 תיעוד זמני הריצה והשוואתם</li>
+          </ul>
+          <p class="meth-text">
+            כל מנוע חישוב ממומש כסרוויס עצמאי שמיישם ממשק אחיד
+            (<span class="meth-code">IMethodEngine</span>).<br>הגישה הזו מאפשרת:
+          </p>
+          <div class="meth-highlights">
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#3b82f6;"></span>הוספת מנועים חדשים בקלות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#10b981;"></span>השוואת ביצועים בין שיטות שונות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#8b5cf6;"></span>תחזוקה פשוטה והפרדה ברורה בין לוגיקות</div>
+          </div>
+        </div>
+
+        <div class="meth-divider"></div>
+
+        <!-- ── PAGING ── -->
+        <div class="meth-section">
+          <div class="meth-section-title">
+            <span class="meth-section-icon" style="background:#10b98112; border-color:#10b98128; color:#10b981;">📦</span>
+            עיבוד נתונים במנות (Paging)
+          </div>
+          <p class="meth-text">
+            כדי לאפשר עבודה יעילה מול מאות אלפי ומיליוני רשומות, המערכת מבצעת את החישוב במנות קבועות:
+          </p>
+          <div class="meth-paging-flow">
+            <span class="meth-paging-step">Page</span>
+            <span class="meth-paging-arrow">→</span>
+            <span class="meth-paging-step">Compute</span>
+            <span class="meth-paging-arrow">→</span>
+            <span class="meth-paging-step">Save</span>
+            <span class="meth-paging-arrow">→</span>
+            <span class="meth-paging-step">Next Page</span>
+          </div>
+          <ul class="meth-features">
+            <li>💡 שימוש זיכרון נמוך ויציב</li>
+            <li>⚡ ביצועים גבוהים גם על דאטה גדול</li>
+            <li>📈 Scalability מלא</li>
+          </ul>
+        </div>
+
+        <div class="meth-divider"></div>
+
+        <!-- ── מנועי חישוב ── -->
+        <div class="meth-section">
+          <div class="meth-section-title">
+            <span class="meth-section-icon" style="background:#f59e0b12; border-color:#f59e0b28; color:#f59e0b;">🔬</span>
+            חישוב במערכת
+          </div>
+          <p class="meth-text">המערכת כוללת שלושה מנועי חישוב שונים, שכל אחד מייצג גישה אחרת לפתרון נוסחאות דינמיות:</p>
+
+          <div class="meth-method-card" style="border-color:#3b82f630;">
+            <div class="meth-method-header" style="background:#3b82f608;">
+              <span class="meth-method-num">1</span>
+              <span class="meth-method-badge" style="background:#3b82f615; color:#3b82f6; border-color:#3b82f630;">SQL</span>
+              <span class="meth-method-name">SQL Dynamic</span>
+            </div>
+            <p class="meth-text">הנוסחה מתורגמת ל־SQL דינמי ומורצת ישירות על מסד הנתונים.</p>
+            <ul class="meth-features">
+              <li>⚡ מהיר במיוחד על טבלאות גדולות</li>
+              <li>🎯 החישוב מתבצע קרוב לנתונים</li>
+              <li>✅ תומך בתנאים ובפעולות מתמטיות</li>
+            </ul>
+          </div>
+
+          <div class="meth-method-card" style="border-color:#8b5cf630;">
+            <div class="meth-method-header" style="background:#8b5cf608;">
+              <span class="meth-method-num">2</span>
+              <span class="meth-method-badge" style="background:#8b5cf615; color:#8b5cf6; border-color:#8b5cf630;">C#</span>
+              <span class="meth-method-name">Roslyn C#</span>
+            </div>
+            <p class="meth-text">הנוסחה מקומפלת בזמן ריצה לקוד C# ומורצת כפונקציה לכל דבר.</p>
+            <ul class="meth-features">
+              <li>🔧 גמישות גבוהה</li>
+              <li>⚡ ביצועים מצוינים לאחר קומפילציה</li>
+              <li>🧠 מתאים לנוסחאות מורכבות</li>
+            </ul>
+          </div>
+
+          <div class="meth-method-card" style="border-color:#10b98130;">
+            <div class="meth-method-header" style="background:#10b98108;">
+              <span class="meth-method-num">3</span>
+              <span class="meth-method-badge" style="background:#10b98115; color:#10b981; border-color:#10b98130;">AST</span>
+              <span class="meth-method-name">DynamicExpresso (AST Interpreter)</span>
+            </div>
+            <p class="meth-text">מפרש את הנוסחה לעץ ביטויים ומחשב אותה ללא קומפילציה מלאה.</p>
+            <ul class="meth-features">
+              <li>➕ קל להרחבה</li>
+              <li>✅ גמישות גבוהה</li>
+              <li>🔧 מאפשר הוספת פונקציות מותאמות</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="meth-divider"></div>
+
+        <!-- ── סיכום ── -->
+        <div class="meth-section meth-summary">
+          <div class="meth-section-title">
+            <span class="meth-section-icon" style="background:#6366f112; border-color:#6366f128; color:#6366f1;">🧩</span>
+            סיכום
+          </div>
+          <p class="meth-text">
+            המערכת משלבת בין מספר מנועי חישוב שונים, כולם פועלים תחת מנגנון הרצה אחיד, ומעבדים את הנתונים במנות יעילות.
+            הארכיטקטורה המודולרית מאפשרת:
+          </p>
+          <div class="meth-highlights">
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#6366f1;"></span>חישוב דינמי של נוסחאות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#10b981;"></span>השוואת ביצועים בין שיטות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#3b82f6;"></span>תמיכה בכמויות נתונים גדולות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#f59e0b;"></span>הוספת מנועים חדשים בקלות</div>
+            <div class="meth-highlight-item"><span class="meth-highlight-dot" style="background:#ec4899;"></span>הרצה מהירה לצורכי הדגמה</div>
+          </div>
+          <p class="meth-text" style="margin-top: 12px;">
+            המערכת מספקת פתרון גמיש, יציב ויעיל לחישוב תשלומים דינמיים — ומתאימה לסביבות פרודקשן ולניתוחי עומק כאחד.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── פופאפ סקריפט הכנסת תרגילים ── -->
+  <div *ngIf="showExerciseScript()" class="sql-overlay" (click)="closeExerciseScript()">
+    <div class="sql-dialog" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="sql-dialog-header">
+        <div class="sql-dialog-title">
+          <span>📋</span>
+          סקריפט הכנסת תרגילים — t_targil
+        </div>
+        <div class="sql-dialog-actions">
+          <button class="sql-copy-btn" (click)="copyExerciseScript()">📋 העתק</button>
+          <button class="sql-close-btn" (click)="closeExerciseScript()">✕</button>
+        </div>
+      </div>
+      <div class="sql-code-wrap">
+        <pre class="sql-code"><code>{{ exerciseScript }}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── פופאפ סקריפט מילוי נתונים ── -->
+  <div *ngIf="showDataScript()" class="sql-overlay" (click)="closeDataScript()">
+    <div class="sql-dialog" (click)="$event.stopPropagation()" dir="rtl">
+
+      <div class="sql-dialog-header">
+        <div class="sql-dialog-title">
+          <span>⚙️</span>
+          סקריפט למילוי נתונים רנדומליים — t_data
+        </div>
+        <div class="sql-dialog-actions">
+          <button class="sql-copy-btn" (click)="copyDataScript()">📋 העתק</button>
+          <button class="sql-close-btn" (click)="closeDataScript()">✕</button>
+        </div>
+      </div>
+
+      <div class="sql-code-wrap">
+        <pre class="sql-code"><code>{{ dataScript }}</code></pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── פופאפ השוואת זמני ריצה ── -->
+  <div *ngIf="showCompareModal()" class="modal-overlay" (click)="onDeclineCompare()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()" dir="rtl">
+
+      <div class="modal-icon-wrap">
+        <div class="modal-icon-circle">✅</div>
+      </div>
+
+      <h3 class="modal-title">המערכת סיימה לעבד נתונים</h3>
+      <p class="modal-body">האם תרצה לבצע השוואת זמני ריצה?</p>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn--decline" (click)="onDeclineCompare()">לא</button>
+        <button class="modal-btn modal-btn--confirm" (click)="onConfirmCompare()">כן, בצע השוואה</button>
+      </div>
+
+    </div>
+  </div>
+
+</main>

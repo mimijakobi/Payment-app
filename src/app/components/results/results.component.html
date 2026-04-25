@@ -1,0 +1,171 @@
+<div class="results-root" dir="rtl">
+
+  <!-- ── כותרת ── -->
+  <div class="results-header">
+    <div class="results-header-glow"></div>
+    <div class="results-header-inner">
+      <div class="header-left">
+        <div class="header-badge">תוצאות השוואה</div>
+        <h2 class="results-title">השוואת זמני ריצה בין שיטות</h2>
+        <p class="results-sub">{{ data.length }} שיטות נבדקו</p>
+      </div>
+      <div class="header-pills">
+        <div class="header-pill">⚡ {{ data.length }} שיטות</div>
+        <div class="header-pill">🏆 {{ fastestMethod?.method }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── באנר תוצאות תואמות / לא תואמות ── -->
+  <div *ngIf="!hasResultsMismatch" class="match-banner match-ok">
+    <span class="match-icon">✅</span>
+    <span>כל השיטות החזירו תוצאות זהות — האחידות מאומתת.</span>
+    <button class="sql-btn" (click)="openSqlModal()">
+      <span class="sql-btn-icon">🔍</span>
+      צפיה בסקריפט השוואת נתונים
+    </button>
+  </div>
+
+  <div *ngIf="hasResultsMismatch" class="match-banner match-warn">
+    <span class="match-icon">⚠️</span>
+    <span>
+      <strong>אזהרה:</strong> השיטות לא החזירו תוצאות זהות!
+      יש לבדוק את נכונות הנוסחאות.
+    </span>
+    <button class="sql-btn sql-btn--warn" (click)="openSqlModal()">
+      <span class="sql-btn-icon">🔍</span>
+      צפיה בסקריפט השוואת נתונים
+    </button>
+  </div>
+
+  <!-- ── גרפים ── -->
+  <div class="charts-grid">
+
+    <!-- גרף עמודות אנכי — זמן ריצה כולל -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-icon" style="background:#6366f112; border-color:#6366f128;">⏱️</div>
+        <div>
+          <div class="chart-card-title">זמן ריצה כולל</div>
+          <div class="chart-card-sub">שניות לכל שיטה • ירוק = מהיר ביותר</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas #totalTimeChart></canvas>
+      </div>
+    </div>
+
+    <!-- גרף עמודות אופקי — כמה פעמים איטי מהמהיר ביותר -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-icon" style="background:#f59e0b12; border-color:#f59e0b28;">📐</div>
+        <div>
+          <div class="chart-card-title">פי כמה איטי מהמהיר ביותר</div>
+          <div class="chart-card-sub">x1.0 = המהירה ביותר • x3.0 = איטית פי 3</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas #speedRatioChart></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── טבלה מסכמת ── -->
+  <div class="table-section">
+    <div class="section-label">
+      <div class="section-label-icon" style="background:#8b5cf612; border-color:#8b5cf628;">📋</div>
+      <span>טבלה מסכמת</span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head summary-grid">
+        <div>שיטה</div>
+        <div>זמן ריצה כולל</div>
+        <div>זמן ריצה ממוצע</div>
+        <div>יחס מהירות</div>
+        <div>מהירה ביותר</div>
+      </div>
+
+      <div
+        *ngFor="let row of sortedBySpeed; let i = index"
+        class="table-row summary-grid"
+        [class.row-fastest]="isFastestRow(row)"
+        [class.row-alt]="i % 2 !== 0 && !isFastestRow(row)"
+      >
+        <div class="cell-method">
+          <span class="method-rank">{{ i + 1 }}</span>
+          <span class="method-name">{{ row.method }}</span>
+        </div>
+        <div class="cell-num">
+          {{ row.total_run_time | number:'1.1-2' }}
+          <span class="cell-unit">שנ'</span>
+        </div>
+        <div class="cell-num">
+          {{ row.avg_run_time | number:'1.2-3' }}
+          <span class="cell-unit">שנ'</span>
+        </div>
+        <div class="cell-ratio">
+          <span class="ratio-badge" [class.ratio-best]="isFastestRow(row)">
+            x{{ row.relative_speed | number:'1.2-2' }}
+          </span>
+        </div>
+        <div class="cell-fastest">
+          <span *ngIf="isFastestRow(row)" class="fastest-badge">🏆 כן</span>
+          <span *ngIf="!isFastestRow(row)" class="not-fastest">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── מסקנה סופית ── -->
+  <div class="conclusion-card" *ngIf="fastestMethod">
+    <div class="conclusion-accent"></div>
+    <div class="conclusion-glow"></div>
+    <div class="conclusion-icon-wrap">🏆</div>
+    <div class="conclusion-body">
+      <div class="conclusion-label">מסקנה סופית</div>
+      <p class="conclusion-text">
+        השיטה המהירה ביותר היא
+        <strong class="conclusion-winner">{{ fastestMethod.method }}</strong>
+        עם זמן ריצה כולל של
+        <strong class="conclusion-winner">{{ fastestMethod.total_run_time | number:'1.1-2' }}</strong>
+        שניות וזמן ריצה ממוצע של
+        <strong class="conclusion-winner">{{ fastestMethod.avg_run_time | number:'1.2-3' }}</strong>
+        שניות לרשומה.
+        <span *ngIf="data.length > 1 && slowestMethod && slowestMethod.method !== fastestMethod.method">
+          <br />
+          היא מהירה פי
+          <strong class="conclusion-winner">{{ slowestMethod.relative_speed | number:'1.1-2' }}</strong>
+          מהשיטה האיטית ביותר
+          (<span class="conclusion-loser">{{ slowestMethod.method }}</span>).
+        </span>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── פופאפ סקריפט SQL ── -->
+<div *ngIf="showSqlModal()" class="sql-overlay" (click)="closeSqlModal()">
+  <div class="sql-dialog" (click)="$event.stopPropagation()" dir="rtl">
+
+    <div class="sql-dialog-header">
+      <div class="sql-dialog-title">
+        <span class="sql-title-icon">🗄️</span>
+        סקריפט השוואת נתונים
+      </div>
+      <div class="sql-dialog-actions">
+        <button class="sql-copy-btn" (click)="copySql()" title="העתק קוד">
+          📋 העתק
+        </button>
+        <button class="sql-close-btn" (click)="closeSqlModal()">✕</button>
+      </div>
+    </div>
+
+    <div class="sql-code-wrap">
+      <pre class="sql-code"><code>{{ sqlScript }}</code></pre>
+    </div>
+
+  </div>
+</div>
