@@ -42,3 +42,16 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+# === .NET / Visual Studio Essentials ===
+[Bb]in/
+[Oo]bj/
+.vs/
+.vsconfig
+*.user
+*.suo
+*.suo
+*.userosscache
+*.sln.docstates
+*.dll
+*.pdb
+*.exe
