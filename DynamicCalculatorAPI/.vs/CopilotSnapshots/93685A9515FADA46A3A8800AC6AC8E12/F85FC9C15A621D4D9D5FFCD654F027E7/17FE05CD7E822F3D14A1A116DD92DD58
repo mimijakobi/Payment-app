@@ -1,0 +1,55 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using DynamicExpresso;
+using System.Diagnostics;
+using Microsoft.Data.SqlClient;
+
+[ApiController]
+[Route("api/[controller]")]
+public class PaymentController : ControllerBase
+{
+    private readonly string _connString = "Your_Connection_String_Here";
+
+    [HttpPost("calculate-all")]
+    public IActionResult CalculateAll()
+    {
+        var interpreter = new Interpreter();
+
+        // 1. שליפת כל הנוסחאות מטבלת t_targil
+        var allTargilim = GetAllTargilim();
+
+        foreach (var targil in allTargilim)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            // 2. פתיחת Stream למיליון הרשומות ב-t_data
+            using (SqlConnection conn = new SqlConnection(_connString))
+            {
+                conn.Open();
+                var cmd = new SqlCommand("SELECT data_id, a, b, c, d FROM t_data", conn);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        // חישוב דינמי (כולל התייחסות לתנאי אם קיים בטבלה)
+                        [cite_start]// DynamicExpresso יודע לטפל בביטויים מורכבים [cite: 50]
+                        var result = interpreter.Eval(targil.Formula,
+                            new Parameter("a", reader.GetDouble(1)),
+                            new Parameter("b", reader.GetDouble(2)),
+                            new Parameter("c", reader.GetDouble(3)),
+                            new Parameter("d", reader.GetDouble(4)));
+
+                        [cite_start]// כאן נשמור ל-t_result [cite: 112]
+                }
+                }
+            }
+
+            stopwatch.Stop();
+
+            [cite_start]// 3. שמירת זמן הריצה עבור הנוסחה הספציפית ב-t_log [cite: 85, 117]
+            SaveLog(targil.Id, "C# DynamicExpresso", stopwatch.Elapsed.TotalSeconds);
+        }
+
+        return Ok("All calculations completed and logged.");
+    } 
+}

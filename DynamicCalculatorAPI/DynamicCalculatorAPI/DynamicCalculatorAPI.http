@@ -1,0 +1,6 @@
+@DynamicCalculatorAPI_HostAddress = http://localhost:5171
+
+GET {{DynamicCalculatorAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
