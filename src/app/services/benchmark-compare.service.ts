@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface CompareMethodResult {
   method: string;
@@ -14,8 +15,9 @@ export interface CompareMethodResult {
 @Injectable({ providedIn: 'root' })
 export class BenchmarkCompareService {
   private http = inject(HttpClient);
+  private baseUrl = environment.apiUrl;
 
   runComparison(jobId: string): Observable<CompareMethodResult[]> {
-    return this.http.get<CompareMethodResult[]>(`api/Payment/report/summary/${jobId}`);
+    return this.http.get<CompareMethodResult[]>(`${this.baseUrl}/Payment/report/summary/${jobId}`);
   }
 }
