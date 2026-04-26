@@ -17,7 +17,7 @@ export class PaymentStatusService {
   pollStatus(jobId: string): Observable<JobStatusResponse> {
     return interval(2000).pipe(
       switchMap(() =>
-        this.http.get<JobStatusResponse>(`${this.baseUrl}/payment/status/${jobId}`)
+        this.http.get<JobStatusResponse>(`${this.baseUrl}/Payment/status/${jobId}`)
       ),
       takeWhile(
         (res) => res.status !== 'completed' && res.status !== 'failed',

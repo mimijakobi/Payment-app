@@ -17,8 +17,9 @@ export class PaymentService {
   // limit = 1000  → דמו על 1,000 רשומות
   runCalculations(limit?: number): Observable<PaymentJobResponse> {
     const url = limit != null
-      ? `${this.baseUrl}/payment?limit=${limit}`
-      : `${this.baseUrl}/payment`;
+      ? `${this.baseUrl}/Payment?limit=${limit}`
+      : `${this.baseUrl}/Payment`;
+      debugger;
     return this.http.post<PaymentJobResponse>(url, {});
   }
 }
